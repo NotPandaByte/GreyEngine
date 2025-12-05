@@ -1,7 +1,19 @@
 [package]
-name = "GreyEngine"
+name = "grey_engine"
 version = "0.1.0"
 edition = "2024"
+
+[lib]
+name = "grey_engine"
+path = "src/lib.rs"
+
+[[bin]]
+name = "grey_engine_demo"
+path = "src/main.rs"
+
+[features]
+default = []
+image = ["dep:image"]
 
 [dependencies]
 anyhow = "1.0"
@@ -10,3 +22,5 @@ env_logger = "0.10"
 log = "0.4"
 wgpu = "27.0.0"
 pollster = "0.3"
+bytemuck = { version = "1.14", features = ["derive"] }
+image = { version = "0.25", optional = true }
