@@ -3,10 +3,13 @@ use std::sync::Arc;
 use winit::{
     application::ApplicationHandler,
     event::*,
-    event_loop::{ActiveEventLoop, EventLoop},
+    event_loop::ActiveEventLoop,
     keyboard::PhysicalKey,
     window::Window,
 };
+
+#[cfg(target_arch = "wasm32")]
+use winit::event_loop::EventLoop;
 
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
@@ -55,7 +58,9 @@ impl ApplicationHandler<State> for App {
         #[cfg(not(target_arch = "wasm32"))]
         {
             // If we are not on web we can use pollster to await
-            self.state = Some(pollster::block_on(State::new(window)).unwrap());
+            let state = pollster::block_on(State::new(window.clone())).unwrap();
+            window.request_redraw(); // Request initial redraw to start animation loop
+            self.state = Some(state);
         }
 
         #[cfg(target_arch = "wasm32")]
@@ -63,16 +68,13 @@ impl ApplicationHandler<State> for App {
             // Run the future asynchronously and use the
             // proxy to send the results to the event loop
             if let Some(proxy) = self.proxy.take() {
+                let window_clone = window.clone();
                 wasm_bindgen_futures::spawn_local(async move {
-                    assert!(
-                        proxy
-                            .send_event(
-                                State::new(window)
-                                    .await
-                                    .expect("Unable to create canvas!!!")
-                            )
-                            .is_ok()
-                    )
+                    let state = State::new(window_clone.clone())
+                        .await
+                        .expect("Unable to create canvas!!!");
+                    window_clone.request_redraw(); // Request initial redraw
+                    assert!(proxy.send_event(state).is_ok())
                 });
             }
         }
@@ -93,6 +95,7 @@ impl ApplicationHandler<State> for App {
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::Resized(size) => state.resize(size.width, size.height),
             WindowEvent::RedrawRequested => {
+                state.update();
                 state.render().unwrap();
             }
             WindowEvent::KeyboardInput {
