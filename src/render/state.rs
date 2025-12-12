@@ -7,7 +7,7 @@ use winit::{
     window::Window,
 };
 
-use crate::{input::keyboard::Keyboard, render::{context::RenderContext, pipeline::create_render_pipeline}};
+use crate::{render::{context::RenderContext, pipeline::create_render_pipeline}};
 
 pub struct State {
     context: RenderContext,
